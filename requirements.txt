@@ -1,0 +1,4 @@
+azure-functions
+pdfplumber
+pyodbc
+requests
