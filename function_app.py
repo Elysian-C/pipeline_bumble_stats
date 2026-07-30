@@ -29,7 +29,7 @@ SQL_CONN_STR = os.environ.get(
 
 app = func.FunctionApp()
 
-@app.route(route="procesar_bumble", auth_level=func.AuthLevel.ANONYMOUS)
+@app.route(route="procesar_bumble", auth_level=func.AuthLevel.ANONYMOUS, methods=["POST", "GET"])
 def procesar_reporte_bumble(req: func.HttpRequest) -> func.HttpResponse:
     logging.info("Iniciando conexión a Gmail...")
     
