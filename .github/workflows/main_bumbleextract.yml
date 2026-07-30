@@ -7,13 +7,13 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' 
   PYTHON_VERSION: '3.11'
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     permissions:
+      id-token: write
       contents: read
 
     steps:
@@ -25,32 +25,18 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      # Subimos solo el código fuente. NO instalamos en .python_packages
-      - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-app
-          path: |
-            .
-            !.git
-            !.github
-            !venv
-            !.python_packages
+      # 1. Instalar dependencias en la carpeta local que exige Azure Flex Consumption
+      - name: Install dependencies
+        run: |
+          mkdir -p .python_packages/lib/site-packages
+          pip install --target=".python_packages/lib/site-packages" -r requirements.txt
 
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    permissions:
-      id-token: write
-      contents: read
+      # 2. Empaquetar todo correctamente en un ZIP (incluyendo .python_packages)
+      - name: Zip artifact for deployment
+        run: |
+          zip -r deployment.zip . -x "*.git*" "venv/*" ".github/*"
 
-    steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
-        with:
-          name: python-app
-          path: .
-
+      # 3. Autenticación en Azure con OIDC
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -58,12 +44,9 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      # 4. Despliegue del paquete ZIP empaquetado
       - name: 'Deploy to Azure Functions'
         uses: Azure/functions-action@v1
-        id: deploy-to-function
         with:
           app-name: 'bumbleextract'
-          slot-name: 'Production'
-          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-          scm-do-build-during-deployment: true
-          enable-oryx-build: true
+          package: 'deployment.zip'
