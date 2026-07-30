@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' # Ruta raíz del proyecto
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' 
   PYTHON_VERSION: '3.11'
 
 jobs:
@@ -25,12 +25,7 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      # Instala las dependencias directamente en el directorio que Azure comprende (.python_packages)
-      - name: Install dependencies for deployment
-        run: |
-          pip install --target=".python_packages/lib/site-packages" -r requirements.txt
-
-      # Sube los archivos limpios (sin necesidad de hacer un zip manual)
+      # Subimos solo el código fuente. NO instalamos en .python_packages
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
@@ -40,6 +35,7 @@ jobs:
             !.git
             !.github
             !venv
+            !.python_packages
 
   deploy:
     runs-on: ubuntu-latest
