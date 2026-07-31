@@ -77,16 +77,23 @@ def procesar_reporte_bumble(req: func.HttpRequest) -> func.HttpResponse:
         # ==========================================
         # 3. EXTRAER URL DEL ZIP Y CONTRASEÑA
         # ==========================================
-        match_url = re.search(r'(https://static-eu\.bumble\.com/data/\S+)', texto_combinado)
-        match_pwd = re.search(r'contraseña única\.\s*\r?\n\r?\n([A-Za-z0-9]{16})', texto_combinado)
+        # 1. Busca el enlace dentro del href="https://static-eu.bumble.com/data/..."
+        match_url = re.search(r'href="(https://static-eu\.bumble\.com/data/[^"]+)"', texto_combinado)
+        
+        # 2. Busca los 16 caracteres alfanuméricos encerrados entre etiquetas <b>...</b>
+        match_pwd = re.search(r'<b>([A-Za-z0-9]{16})</b>', texto_combinado)
 
         if not match_url or not match_pwd:
-            logging.error("No se pudo extraer la URL del reporte o la contraseña.")
-            return func.HttpResponse("Error al extraer URL o contraseña del correo.", status_code=400)
+            logging.error(f"Fallo de extracción -> URL hallada: {bool(match_url)} | Contraseña hallada: {bool(match_pwd)}")
+            return func.HttpResponse(
+                f"Error: No se pudo extraer la URL ({bool(match_url)}) o Contraseña ({bool(match_pwd)}).", 
+                status_code=400
+            )
 
         url_zip = match_url.group(1)
         password_zip = match_pwd.group(1)
-        logging.info("URL y contraseña encontradas exitosamente.")
+
+        logging.info(f"¡Éxito! URL: {url_zip[:40]}... | Contraseña: {password_zip}")
 
         # ==========================================
         # 4. DESCARGAR EL ARCHIVO ZIP
