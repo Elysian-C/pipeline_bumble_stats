@@ -71,6 +71,9 @@ def procesar_reporte_bumble(req: func.HttpRequest) -> func.HttpResponse:
         texto_2 = obtener_cuerpo_correo(id_correo_2)
         texto_combinado = texto_1 + "\n" + texto_2
 
+        # --- LOGS DE DEPURACIÓN ---
+        logging.info(f"--- CONTENIDO EXTRAÍDO DE LOS CORREOS ---\n{texto_combinado}\n-----------------------------------")
+
         # ==========================================
         # 3. EXTRAER URL DEL ZIP Y CONTRASEÑA
         # ==========================================
